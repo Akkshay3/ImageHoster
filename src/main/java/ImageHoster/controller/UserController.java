@@ -10,9 +10,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Controller
@@ -39,10 +42,38 @@ public class UserController {
 
     //This controller method is called when the request pattern is of type 'users/registration' and also the incoming request is of POST type
     //This method calls the business logic and after the user record is persisted in the database, directs to login page
+
+    /**
+     * Register new user
+     *
+     * @param user
+     * @param redirectAttrs
+     * @return
+     */
     @RequestMapping(value = "users/registration", method = RequestMethod.POST)
-    public String registerUser(User user) {
-        userService.registerUser(user);
-        return "redirect:/users/login";
+    public String registerUser(User user, RedirectAttributes redirectAttrs) {
+        if (isPasswordStrong(user.getPassword())) {
+            userService.registerUser(user);
+            return "users/login";
+        } else {
+            String error = "Password must contain atleast 1 alphabet, 1 number & 1 special character";
+            redirectAttrs.addAttribute("passwordTypeError", error).addFlashAttribute("passwordTypeError", error);
+            return "redirect:/users/registration";
+        }
+    }
+
+    /**
+     * password entered by the user must contain at least 1 alphabet (a-z or A-Z),
+     * 1 number (0-9) and 1 special character (any character other than a-z, A-Z and 0-9).
+     *
+     * @param password
+     * @return
+     */
+    private Boolean isPasswordStrong(String password) {
+        String regex = "(?=.*[a-z])(?=.*[0-9])(?=.*[^a-z0-9])";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher match = pattern.matcher(password);
+        return match.find();
     }
 
     //This controller method is called when the request pattern is of type 'users/login'
